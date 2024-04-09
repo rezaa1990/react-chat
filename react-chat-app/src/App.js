@@ -1,9 +1,10 @@
 import './App.css';
+import RegisterForm from './components/register';
 
 function App() {
   return (
     <div className="App">
-     Hi chat
+     <RegisterForm/>
     </div>
   );
 }
