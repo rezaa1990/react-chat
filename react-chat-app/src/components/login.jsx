@@ -2,36 +2,34 @@ import React from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import axios from "axios";
 
-const RegisterForm = () => {
+const Login = () => {
   const handleSubmit = async (values) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/register",
+        "http://localhost:3000/api/login",
         values
       );
-      console.log(response.data);
+      const { token } = response.data;
+
+      // ذخیره توکن در لوکال استوریج
+      localStorage.setItem("token", token);
+
+      console.log("ورود موفقیت‌آمیز.");
     } catch (error) {
-      console.error("Error registering user:", error);
+      console.error("Error logging in:", error);
     }
   };
 
   return (
     <Formik
-      initialValues={{ username: "", email: "", password: "" }}
+      initialValues={{ email: "", password: "" }}
       validate={(values) => {
         const errors = {};
-        if (!values.username) {
-          errors.username = "نام کاربری اجباری است";
-        }
         if (!values.email) {
           errors.email = "ایمیل اجباری است";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
-          errors.email = "ایمیل نامعتبر است";
         }
         if (!values.password) {
           errors.password = "رمز عبور اجباری است";
-        } else if (values.password.length < 6) {
-          errors.password = "رمز عبور باید حداقل 6 کاراکتر باشد";
         }
         return errors;
       }}
@@ -39,17 +37,6 @@ const RegisterForm = () => {
     >
       {({ isSubmitting }) => (
         <Form>
-          <div className="mb-3">
-            <label htmlFor="username" className="form-label">
-              نام کاربری
-            </label>
-            <Field type="text" name="username" className="form-control" />
-            <ErrorMessage
-              name="username"
-              component="div"
-              className="text-danger"
-            />
-          </div>
           <div className="mb-3">
             <label htmlFor="email" className="form-label">
               ایمیل
@@ -77,7 +64,7 @@ const RegisterForm = () => {
             className="btn btn-primary"
             disabled={isSubmitting}
           >
-            ثبت نام
+            ورود
           </button>
         </Form>
       )}
@@ -85,4 +72,4 @@ const RegisterForm = () => {
   );
 };
 
-export default RegisterForm;
+export default Login;
