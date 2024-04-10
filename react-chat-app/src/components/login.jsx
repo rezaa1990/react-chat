@@ -1,8 +1,26 @@
 import React from "react";
+import { useEffect, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import axios from "axios";
 
 const Login = () => {
+  const [allUsers, setAllUsers] = useState([]);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:3030/api/getallusers"
+        );
+        setAllUsers(response.data);
+        console.log('allUsers:',response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
   const handleSubmit = async (values) => {
     try {
       const response = await axios.post(
