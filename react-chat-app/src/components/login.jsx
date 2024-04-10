@@ -6,7 +6,7 @@ const Login = () => {
   const handleSubmit = async (values) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/login",
+        "http://localhost:3030/api/login",
         values
       );
       const { token } = response.data;

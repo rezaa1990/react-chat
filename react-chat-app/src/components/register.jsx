@@ -6,7 +6,7 @@ const RegisterForm = () => {
   const handleSubmit = async (values) => {
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/register",
+        "http://localhost:3030/api/register",
         values
       );
       console.log(response.data);
