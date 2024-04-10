@@ -1,10 +1,21 @@
 import React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import axios from "axios";
+import ChatContext from "./context";
 
 const Login = () => {
-  const [allUsers, setAllUsers] = useState([]);
+  const {
+    allUsers, 
+    setAllUsers,
+    rooms,
+    setRooms,
+    selectedRoom,
+    setSelectedRoom,
+    inputMessage,
+    setInputMessage,
+  } = useContext(ChatContext);
+
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -12,7 +23,7 @@ const Login = () => {
           "http://localhost:3030/api/getallusers"
         );
         setAllUsers(response.data);
-        console.log('allUsers:',response.data);
+        console.log("allUsers:", response.data);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
