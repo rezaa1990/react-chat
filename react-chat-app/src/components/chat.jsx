@@ -3,25 +3,32 @@ import io from "socket.io-client";
 
 const Chat = () => {
   const [socket, setSocket] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [rooms, setRooms] = useState([
+    { name: '100', messages: [] },
+    { name: '200', messages: [] },
+    { name: '300', messages: [] },
+  ]); // State to store list of rooms
+  const [selectedRoom, setSelectedRoom] = useState(""); // State to store selected room
   const [inputMessage, setInputMessage] = useState("");
-  const room = "room100";
 
   useEffect(() => {
     const newSocket = io("http://localhost:3030");
 
     newSocket.on("connect", () => {
       console.log("Connected to socket server");
-      // Join the room after connecting to the server
-      newSocket.emit("joinRoom", room);
     });
 
     newSocket.on("disconnect", () => {
       console.log("Disconnected from socket server");
     });
 
-    newSocket.on("message", (message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
+    newSocket.on("message", (data) => {
+      const { room, message } = data;
+      setRooms((prevRooms) =>
+        prevRooms.map((r) =>
+          r.name === room ? { ...r, messages: [...r.messages, message] } : r
+        )
+      );
     });
 
     setSocket(newSocket);
@@ -31,10 +38,15 @@ const Chat = () => {
     };
   }, []);
 
+  const joinRoom = (room) => {
+    console.log('room:',room.name)
+    setSelectedRoom(room.name);
+    socket.emit("joinRoom", room.name);
+  };
+
   const sendMessage = () => {
     if (inputMessage.trim() !== "") {
-      // Send message along with the room name
-      socket.emit("sendMessage", { room, message: inputMessage });
+      socket.emit("sendMessage", { room: selectedRoom, message: inputMessage });
       setInputMessage("");
     }
   };
@@ -43,20 +55,38 @@ const Chat = () => {
     <div>
       <h1>Chat App</h1>
       <div>
+        {/* List of rooms */}
         <ul>
-          {messages.map((message, index) => (
-            <li key={index}>{message}</li>
+          {rooms.map((room, index) => (
+            <li key={index} onClick={() => joinRoom(room)}>
+              Room {room.name}
+            </li>
           ))}
         </ul>
       </div>
-      <div>
-        <input
-          type="text"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-        />
-        <button onClick={sendMessage}>Send</button>
-      </div>
+      {selectedRoom && ( // Render chat area only if a room is selected
+        <div>
+          {/* Display messages for selected room */}
+          <h2>Room: {selectedRoom}</h2>
+          <ul>
+            {rooms
+              .find((room) => room.name === selectedRoom)
+              .messages.map((message, index) => (
+                <li key={index}>{message}</li>
+              ))}
+          </ul>
+          <div>
+            {/* Input for typing message */}
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+            />
+            {/* Button to send message */}
+            <button onClick={sendMessage}>Send</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
