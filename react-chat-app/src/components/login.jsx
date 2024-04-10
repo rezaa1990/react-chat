@@ -1,8 +1,9 @@
 import React from "react";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext} from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import axios from "axios";
 import ChatContext from "./context";
+import {useNavigate} from "react-router-dom";
 
 const Login = () => {
   const {
@@ -15,7 +16,7 @@ const Login = () => {
     inputMessage,
     setInputMessage,
   } = useContext(ChatContext);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -44,6 +45,8 @@ const Login = () => {
       localStorage.setItem("token", token);
 
       console.log("ورود موفقیت‌آمیز.");
+      
+      navigate("/chat")
     } catch (error) {
       console.error("Error logging in:", error);
     }
