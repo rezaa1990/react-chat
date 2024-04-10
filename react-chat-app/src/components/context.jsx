@@ -13,10 +13,13 @@ export const ChatProvider = ({ children }) => {
   const [selectedRoom, setSelectedRoom] = useState(""); // State to store selected room
   const [inputMessage, setInputMessage] = useState("");
   const [allUsers, setAllUsers] = useState([]);
+  const [loginedUser, setLoginedUser] = useState();
 
   return (
     <ChatContext.Provider
       value={{
+        loginedUser, 
+        setLoginedUser,
         allUsers, 
         setAllUsers,
         rooms,

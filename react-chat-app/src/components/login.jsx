@@ -7,6 +7,7 @@ import {useNavigate} from "react-router-dom";
 
 const Login = () => {
   const {
+    setLoginedUser,
     allUsers, 
     setAllUsers,
     rooms,
@@ -39,8 +40,9 @@ const Login = () => {
         "http://localhost:3030/api/login",
         values
       );
-      const { token } = response.data;
-
+      const { token , user } = response.data;
+      
+      setLoginedUser(user);
       // ذخیره توکن در لوکال استوریج
       localStorage.setItem("token", token);
 
