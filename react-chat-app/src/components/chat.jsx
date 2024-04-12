@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from "react";
-import io from "socket.io-client";
 import ChatContext from "./context";
+import axios from "axios";
 
 const Chat = () => {
   const {
@@ -15,30 +15,51 @@ const Chat = () => {
     inputMessage,
     setInputMessage,
   } = useContext(ChatContext);
-  const [selectedUser, setSelectedUser] = useState(null); // State to store selected user
-  // const newSocket = io("http://localhost:3030");
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [chatData, setChatData] = useState([]);
+ useEffect(() => {
+   if (!socket) return;
 
-useEffect(() => {
-  if (!socket) return;
+   const updateChatData = (data) => {
+     const roomIndex = chatData.findIndex((item) => item.room == data.room);
 
-  socket.on("message", (data) => {
-    console.log("Message received", data);
-    // Handle incoming message here
-  });
+     if (roomIndex !== -1) {
+       setChatData((prevChatData) => {
+         const updatedChatData = [...prevChatData];
+         updatedChatData[roomIndex].messages.push(data.message);
+         return updatedChatData;
+       });
+     } else {
+       setChatData((prevChatData) => [
+         ...prevChatData,
+         {
+           room: data.room,
+           messages: [data.message],
+         },
+       ]);
+     }
+   };
 
-  return () => {
-    socket.off("message");
-  };
-}, [socket]);
+   socket.on("message", (data) => {
+    //  console.log("Message received", data);
+     updateChatData(data);
+     console.log("chatData", chatData);
+   });
+
+   return () => {
+     socket.off("message");
+   };
+ }, [socket, chatData]);
+
   /////////////////////////////////////////////////////////////////////////////
-  const joinRoom = (room) => {
-    console.log("room:", room.name);
-    setSelectedRoom(room.name);
-    socket.emit("joinRoom", room.name);
-  };
+  // const joinRoom = (room) => {
+  //   console.log("room:", room.name);
+  //   setSelectedRoom(room.name);
+  //   socket.emit("joinRoom", room.name);
+  // };
 
   const sendMessage = () => {
-    console.log("sendmessage")
+    console.log("sendmessage");
     if (inputMessage.trim() !== "") {
       socket.emit("sendMessage", {
         room: selectedRoom,
@@ -48,12 +69,25 @@ useEffect(() => {
     }
   };
 
-  const startChatWithUser = (user) => {
-    setSelectedUser(user);
-    const newRoomName = `${loginedUser.email}_${user.email}`;
-    console.log("newRoom created", newRoomName);
-    setSelectedRoom(newRoomName);
-    socket.emit("joinRoom", newRoomName);
+  const startChatWithUser = async (user) => {
+    try {
+      setSelectedUser(user);
+      const makeRoomData = {
+        loginedUser,
+        selectedUser: user,
+      };
+      const response = await axios.post(
+        "http://localhost:3030/api/makeroom",
+        makeRoomData
+      );
+      console.log(response.data.room._id);
+      const newRoomName = response.data.room._id;
+      console.log("newRoom created", newRoomName);
+      setSelectedRoom(newRoomName);
+      socket.emit("joinRoom", newRoomName);
+    } catch (error) {
+      console.error("err:", error);
+    }
   };
 
   return (
@@ -75,13 +109,18 @@ useEffect(() => {
           {/* Display selected user */}
           <h2>Chatting with: {selectedUser.username}</h2>
           {/* Display messages for selected room */}
-          <ul>
-            {rooms
-              .find((room) => room.name == selectedRoom)
-              ?.messages.map((message, index) => (
-                <li key={index}>{message}</li>
-              ))}
-          </ul>
+          <div>
+            {chatData.map((roomData, index) => (
+              <div key={index}>
+                <h2>Room: {roomData.room}</h2>
+                <ul>
+                  {roomData.messages.map((message, messageIndex) => (
+                    <li key={messageIndex}>{message}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
           <div>
             {/* Input for typing message */}
             <input
