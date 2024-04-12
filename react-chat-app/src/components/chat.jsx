@@ -1,77 +1,84 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import io from "socket.io-client";
+import ChatContext from "./context";
 
 const Chat = () => {
-  const [socket, setSocket] = useState(null);
-  const [rooms, setRooms] = useState([
-    { name: '100', messages: [] },
-    { name: '200', messages: [] },
-    { name: '300', messages: [] },
-  ]); // State to store list of rooms
-  const [selectedRoom, setSelectedRoom] = useState(""); // State to store selected room
-  const [inputMessage, setInputMessage] = useState("");
+  const {
+    socket,
+    loginedUser,
+    allUsers,
+    setAllUsers,
+    rooms,
+    setRooms,
+    selectedRoom,
+    setSelectedRoom,
+    inputMessage,
+    setInputMessage,
+  } = useContext(ChatContext);
+  const [selectedUser, setSelectedUser] = useState(null); // State to store selected user
+  // const newSocket = io("http://localhost:3030");
 
-  useEffect(() => {
-    const newSocket = io("http://localhost:3030");
+useEffect(() => {
+  if (!socket) return;
 
-    newSocket.on("connect", () => {
-      console.log("Connected to socket server");
-    });
+  socket.on("message", (data) => {
+    console.log("Message received", data);
+    // Handle incoming message here
+  });
 
-    newSocket.on("disconnect", () => {
-      console.log("Disconnected from socket server");
-    });
-
-    newSocket.on("message", (data) => {
-      const { room, message } = data;
-      setRooms((prevRooms) =>
-        prevRooms.map((r) =>
-          r.name === room ? { ...r, messages: [...r.messages, message] } : r
-        )
-      );
-    });
-
-    setSocket(newSocket);
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, []);
-
+  return () => {
+    socket.off("message");
+  };
+}, [socket]);
+  /////////////////////////////////////////////////////////////////////////////
   const joinRoom = (room) => {
-    console.log('room:',room.name)
+    console.log("room:", room.name);
     setSelectedRoom(room.name);
     socket.emit("joinRoom", room.name);
   };
 
   const sendMessage = () => {
+    console.log("sendmessage")
     if (inputMessage.trim() !== "") {
-      socket.emit("sendMessage", { room: selectedRoom, message: inputMessage });
-      setInputMessage("");
+      socket.emit("sendMessage", {
+        room: selectedRoom,
+        message: inputMessage,
+      });
+      // setInputMessage("");
     }
+  };
+
+  const startChatWithUser = (user) => {
+    setSelectedUser(user);
+    const newRoomName = `${loginedUser.email}_${user.email}`;
+    console.log("newRoom created", newRoomName);
+    setSelectedRoom(newRoomName);
+    socket.emit("joinRoom", newRoomName);
   };
 
   return (
     <div>
       <h1>Chat App</h1>
       <div>
-        {/* List of rooms */}
-        <ul>
-          {rooms.map((room, index) => (
-            <li key={index} onClick={() => joinRoom(room)}>
-              Room {room.name}
-            </li>
-          ))}
-        </ul>
+        {/* Display list of users */}
+        <h2>Users</h2>
+        {/* <ul> */}
+        {allUsers.map((user, index) => (
+          <li key={index} onClick={() => startChatWithUser(user)}>
+            start chat with: {user.username}
+          </li>
+        ))}
+        {/* </ul> */}
       </div>
-      {selectedRoom && ( // Render chat area only if a room is selected
+      {selectedUser && (
         <div>
+          {/* Display selected user */}
+          <h2>Chatting with: {selectedUser.username}</h2>
           {/* Display messages for selected room */}
-          <h2>Room: {selectedRoom}</h2>
           <ul>
             {rooms
-              .find((room) => room.name === selectedRoom)
-              .messages.map((message, index) => (
+              .find((room) => room.name == selectedRoom)
+              ?.messages.map((message, index) => (
                 <li key={index}>{message}</li>
               ))}
           </ul>
@@ -83,7 +90,7 @@ const Chat = () => {
               onChange={(e) => setInputMessage(e.target.value)}
             />
             {/* Button to send message */}
-            <button onClick={sendMessage}>Send</button>
+            <button onClick={sendMessage}>Sendd</button>
           </div>
         </div>
       )}
