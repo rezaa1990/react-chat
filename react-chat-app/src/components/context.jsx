@@ -16,6 +16,7 @@ export const ChatProvider = ({ children }) => {
   const [inputMessage, setInputMessage] = useState("");
   const [allUsers, setAllUsers] = useState([]);
   const [loginedUser, setLoginedUser] = useState();
+  const [chatData, setChatData] = useState([]);
 
   useEffect(() => {
     const newSocket = io("http://localhost:3030");
@@ -29,6 +30,8 @@ export const ChatProvider = ({ children }) => {
   return (
     <ChatContext.Provider
       value={{
+        chatData, 
+        setChatData,
         socket,
         loginedUser, 
         setLoginedUser,

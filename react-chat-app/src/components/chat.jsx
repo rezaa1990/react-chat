@@ -1,65 +1,63 @@
 import React, { useEffect, useState, useContext } from "react";
 import ChatContext from "./context";
 import axios from "axios";
-
+import useUpdateChatData from "./updatechatdata";
 const Chat = () => {
   const {
+    chatData,
     socket,
     loginedUser,
     allUsers,
-    setAllUsers,
-    // rooms,
-    // setRooms,
     selectedRoomId,
     setSelectedRoomId,
     inputMessage,
     setInputMessage,
   } = useContext(ChatContext);
+  const updateChatData = useUpdateChatData();
   const [selectedUser, setSelectedUser] = useState(null);
-  const [chatData, setChatData] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState();
+  const [oldMessages, setOldMessages] = useState();
   console.log("loginedUser:", loginedUser);
+
+  const getOldmessages = async () => {
+    try {
+      const loginedUserEmail = loginedUser.email;
+      console.log("logineduser:", loginedUserEmail);
+      const response = await axios.get(
+        `http://localhost:3030/api/getoldmessages?loginedUserEmail=${loginedUserEmail}`
+      );
+      let oldMessages = response.data;
+      setOldMessages(oldMessages);
+      console.log("oldMessages", oldMessages);
+      updateChatData(oldMessages, "getOldmessages");
+    } catch (error) {
+      console.error("خطا:", error);
+    }
+  };
+
   useEffect(() => {
-    if (!socket) return;
-
-    const updateChatData = (data) => {
-      console.log("updateChatData",data);
-      const roomIndex = chatData.findIndex((item) => item.room == data.room.name);
-
-      if (roomIndex !== -1) {
-        setChatData((prevChatData) => {
-          const updatedChatData = [...prevChatData];
-          updatedChatData[roomIndex].messages.push(data.message);
-          return updatedChatData;
-        });
-      } else {
-        setChatData((prevChatData) => [
-          ...prevChatData,
-          {
-            room: data.room.name,
-            messages: [data.message],
-          },
-        ]);
+    const fetchData = async () => {
+      try {
+        await getOldmessages();
+      } catch (error) {
+        console.error("Error fetching old messages:", error);
       }
     };
 
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
     socket.on("message", (data) => {
-      //  console.log("Message received", data);
-      updateChatData(data);
-      console.log("chatData", chatData);
+      console.log("Message received", data);
+      updateChatData(data.newData, "socket_message");
     });
 
     return () => {
       socket.off("message");
     };
   }, [socket, chatData]);
-
-  /////////////////////////////////////////////////////////////////////////////
-  // const joinRoom = (room) => {
-  //   console.log("room:", room.name);
-  //   setSelectedRoom(room.name);
-  //   socket.emit("joinRoom", room.name);
-  // };
 
   const sendMessage = () => {
     console.log("sendmessage");
@@ -86,59 +84,67 @@ const Chat = () => {
         makeRoomData
       );
       let room = response.data.room;
-      console.log("roooooom",room);
+      console.log("roooooom", room);
       setSelectedRoom(room);
-      console.log("selectedRoom:",selectedRoom);
+      console.log("selectedRoom:", selectedRoom);
       setSelectedRoomId(room._id);
       console.log("selectedRoomId:", selectedRoomId);
       await socket.emit("joinRoom", room._id);
     } catch (error) {
       console.error("err:", error);
-    } 
+    }
   };
+
+  const [selectedRoomData, setSelectedRoomData] = useState(null);
+
+  const selectRoom = (roomData) => {
+    setSelectedRoom(roomData);
+  };
+
+  console.log("chaaaatdataaaa:", chatData);
+
   return (
     <div>
       <h1>Chat App</h1>
       <div>
-        {/* Display list of users */}
         <h2>Users</h2>
-        {/* <ul> */}
-        {allUsers.map((user, index) => (
-          <li key={index} onClick={() => startChatWithUser(user)}>
-            start chat with: {user.username};
-          </li>
-        ))}
-        {/* </ul> */}
+        <ul>
+          {allUsers.map((user, index) => (
+            <li key={index} onClick={() => startChatWithUser(user)}>
+              start chat with: {user.username};
+            </li>
+          ))}
+        </ul>
       </div>
-      {selectedUser && (
+
+      <div>
         <div>
-          {/* Display selected user */}
-          {/* <h2>Chatting at:{selectedRoom?.name}</h2> */}
-          {/* Display messages for selected room */}
-          <div>
-            {chatData.map((roomData, index) => (
-              <div key={index}>
-                <h2>Room: {roomData.room}</h2>
-                <ul>
-                  {roomData.messages.map((message, messageIndex) => (
-                    <li key={messageIndex}>{message}</li>
+          <h2>Rooms</h2>
+          <div className="">
+            <ul className="">
+              {chatData?.map((r, i) => (
+                <ul key={i} className="">
+                  roomname: {r.name}
+                  {r.messages?.map((m, j) => (
+                    <li key={j} className="">
+                      <br />
+                      {j}: {m}
+                    </li>
                   ))}
                 </ul>
-              </div>
-            ))}
-          </div>
-          <div>
-            {/* Input for typing message */}
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-            />
-            {/* Button to send message */}
-            <button onClick={sendMessage}>Sendd</button>
+              ))}
+            </ul>
           </div>
         </div>
-      )}
+        <div>
+          <input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+          />
+          <button onClick={sendMessage}>Sendd</button>
+        </div>
+      </div>
     </div>
   );
 };
