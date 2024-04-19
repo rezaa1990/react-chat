@@ -48,19 +48,38 @@ const Chat = () => {
   }, []);
 
   /////////////////////////////////////////////////////////////////
-useEffect(() => {
-  if (!socket || !loginedUser.rooms.length) return;
+  useEffect(() => {
+    if (!socket) return;
 
-  loginedUser.rooms.forEach((roomId) => {
-    socket.emit("joinRoom", roomId);
-  });
-
-  return () => {
+    // متصل کردن به تمام روم‌های داخل loginedUser
     loginedUser.rooms.forEach((roomId) => {
-      socket.emit("leaveRoom", roomId);
+      socket.emit("joinRoom", roomId);
     });
-  };
-}, [socket, loginedUser.rooms]);
+
+    socket.on("makeRoomResponse", (data) => {
+      console.log("makeRoomResponse", data);
+      setSelectedRoomId(data.room._id);
+
+      if (!loginedUser.rooms.includes(data.room._id)) {
+        // بررسی عضویت کاربر در اتاق
+        if (data.room.members.includes(loginedUser._id)) {
+          // بررسی عضویت کاربر در اعضاء اتاق
+          loginedUser.rooms.push(data.room._id);
+          socket.emit("joinRoom", data.room._id);
+        } else {
+          console.log("کاربر عضو این اتاق نیست.");
+        }
+      }
+    });
+
+    return () => {
+      if (socket) {
+        loginedUser.rooms.forEach((roomId) => {
+          socket.emit("leaveRoom", roomId); // جدا کردن از تمام روم‌ها در صورت قطع اتصال
+        });
+      }
+    };
+  }, [socket, loginedUser.rooms]);
 
   /////////////////////////////////////////////////////////////////
 
@@ -85,7 +104,7 @@ useEffect(() => {
         room: selectedRoomId,
         message: inputMessage,
       });
-      // setInputMessage("");
+      setInputMessage("");
     }
   };
 
@@ -96,23 +115,14 @@ useEffect(() => {
         loginedUser,
         selectedUser: user,
       };
-      const response = await axios.post(
-        "http://localhost:3030/api/makeroom",
-        makeRoomData
-      );
-      let room = response.data.room;
-      console.log("roooooom", room);
-      setSelectedRoom(room);
-      console.log("selectedRoom:", selectedRoom);
-      setSelectedRoomId(room._id);
-      console.log("selectedRoomId:", selectedRoomId);
-      await socket.emit("joinRoom", room._id);
+
+      socket.emit("makeRoom", makeRoomData);
     } catch (error) {
       console.error("err:", error);
     }
   };
 
-  const [selectedRoomData, setSelectedRoomData] = useState(null);
+  // const [selectedRoomData, setSelectedRoomData] = useState(null);
 
   const selectRoom = (roomData) => {
     setSelectedRoom(roomData);
