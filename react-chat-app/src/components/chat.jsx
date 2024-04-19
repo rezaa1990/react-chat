@@ -47,6 +47,23 @@ const Chat = () => {
     fetchData();
   }, []);
 
+  /////////////////////////////////////////////////////////////////
+useEffect(() => {
+  if (!socket || !loginedUser.rooms.length) return;
+
+  loginedUser.rooms.forEach((roomId) => {
+    socket.emit("joinRoom", roomId);
+  });
+
+  return () => {
+    loginedUser.rooms.forEach((roomId) => {
+      socket.emit("leaveRoom", roomId);
+    });
+  };
+}, [socket, loginedUser.rooms]);
+
+  /////////////////////////////////////////////////////////////////
+
   useEffect(() => {
     if (!socket) return;
     socket.on("message", (data) => {
