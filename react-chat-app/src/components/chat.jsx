@@ -130,46 +130,50 @@ const Chat = () => {
 
   console.log("chaaaatdataaaa:", chatData);
 
-  return (
-    <div>
-      <h1>Chat App</h1>
-      <div>
-        <h2>Users</h2>
-        <ul>
-          {allUsers.map((user, index) => (
-            <li key={index} onClick={() => startChatWithUser(user)}>
-              start chat with: {user.username};
-            </li>
-          ))}
-        </ul>
-      </div>
+  // import "./styles.css";
 
-      <div>
+  return (
+    <div className="container">
+      <div className="box">
+        <h1>Chat App</h1>
         <div>
-          <h2>Rooms</h2>
-          <div className="">
-            <ul className="">
-              {chatData?.map((r, i) => (
-                <ul key={i} className="">
-                  roomname: {r.name}
-                  {r.messages?.map((m, j) => (
-                    <li key={j} className="">
-                      <br />
-                      {j}: {m}
-                    </li>
-                  ))}
-                </ul>
-              ))}
-            </ul>
-          </div>
+          <h2>Users</h2>
+          <ul>
+            {allUsers.map((user, index) => (
+              <li key={index} onClick={() => startChatWithUser(user)}>
+                start chat with: {user.username};
+              </li>
+            ))}
+          </ul>
         </div>
+
         <div>
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-          />
-          <button onClick={sendMessage}>Sendd</button>
+          <div>
+            <h2>Rooms</h2>
+            <div className="">
+              <ul className="">
+                {chatData?.map((r, i) => (
+                  <ul key={i} className="">
+                    roomname: {r.name}
+                    {r.messages?.map((m, j) => (
+                      <li key={j} className="">
+                        <br />
+                        {j}: {m}
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div>
+            <input
+              type="text"
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+            />
+            <button onClick={sendMessage}>Sendd</button>
+          </div>
         </div>
       </div>
     </div>
