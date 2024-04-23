@@ -1,12 +1,27 @@
 import React from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
+import {useContext } from "react";
+import ChatContext from "./context";
 import axios from "axios";
 
 const RegisterForm = () => {
+    const {
+      server,
+      port,
+      setLoginedUser,
+      allUsers,
+      setAllUsers,
+      rooms,
+      setRooms,
+      selectedRoom,
+      setSelectedRoom,
+      inputMessage,
+      setInputMessage,
+    } = useContext(ChatContext);
   const handleSubmit = async (values) => {
     try {
       const response = await axios.post(
-        "http://localhost:3030/api/register",
+        `http://${server}:${port}/api/register`,
         values
       );
       console.log(response.data);
