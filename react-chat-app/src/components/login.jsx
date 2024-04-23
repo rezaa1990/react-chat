@@ -1,14 +1,16 @@
 import React from "react";
-import { useEffect, useState, useContext} from "react";
+import { useEffect, useState, useContext } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import axios from "axios";
 import ChatContext from "./context";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const {
+    server,
+    port,
     setLoginedUser,
-    allUsers, 
+    allUsers,
     setAllUsers,
     rooms,
     setRooms,
@@ -22,7 +24,7 @@ const Login = () => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get(
-          "http://localhost:3030/api/getallusers"
+          `http://${server}:${port}/api/getallusers`
         );
         setAllUsers(response.data);
         console.log("allUsers:", response.data);
@@ -37,18 +39,18 @@ const Login = () => {
   const handleSubmit = async (values) => {
     try {
       const response = await axios.post(
-        "http://localhost:3030/api/login",
+        `http://${server}:${port}/api/login`,
         values
       );
       const { token , user } = response.data;
-      
+
       setLoginedUser(user);
       // ذخیره توکن در لوکال استوریج
       localStorage.setItem("token", token);
 
       console.log("ورود موفقیت‌آمیز.");
       
-      navigate("/chat")
+      navigate("/chat");
     } catch (error) {
       console.error("Error logging in:", error);
     }
