@@ -4,7 +4,10 @@ import axios from "axios";
 import useUpdateChatData from "./updatechatdata";
 const Chat = () => {
   const {
+    server,
+    port,
     chatData,
+    setChatData,
     socket,
     loginedUser,
     allUsers,
@@ -17,6 +20,7 @@ const Chat = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [selectedRoom, setSelectedRoom] = useState();
   const [oldMessages, setOldMessages] = useState();
+  const [itsMe, setItsMe] = useState("");
   console.log("loginedUser:", loginedUser);
 
   const getOldmessages = async () => {
@@ -24,7 +28,7 @@ const Chat = () => {
       const loginedUserEmail = loginedUser.email;
       console.log("logineduser:", loginedUserEmail);
       const response = await axios.get(
-        `http://localhost:3030/api/getoldmessages?loginedUserEmail=${loginedUserEmail}`
+        `http://${server}:${port}/api/getoldmessages?loginedUserEmail=${loginedUserEmail}`
       );
       let oldMessages = response.data;
       setOldMessages(oldMessages);
@@ -56,9 +60,17 @@ const Chat = () => {
       socket.emit("joinRoom", roomId);
     });
 
-    socket.on("makeRoomResponse", (data) => {
+    socket.on("makeRoomResponse", async (data) => {
       console.log("makeRoomResponse", data);
-      setSelectedRoomId(data.room._id);
+      await setSelectedRoomId(data.room._id);
+      const roomExists = chatData.find((room) => room.name === data.room.name);
+      if (!roomExists) {
+        chatData.push(data.room);
+      }
+      console.log("itsMe:", itsMe);
+      if (data.loginedUser._id == loginedUser._id) {
+        toggleRoom(data.room.name);
+      }
 
       if (!loginedUser.rooms.includes(data.room._id)) {
         // بررسی عضویت کاربر در اتاق
@@ -79,7 +91,7 @@ const Chat = () => {
         });
       }
     };
-  }, [socket, loginedUser.rooms]);
+  }, [socket, loginedUser?.rooms]);
 
   /////////////////////////////////////////////////////////////////
 
@@ -109,28 +121,39 @@ const Chat = () => {
   };
 
   const startChatWithUser = async (user) => {
-    try {
-      setSelectedUser(user);
-      const makeRoomData = {
-        loginedUser,
-        selectedUser: user,
-      };
-
-      socket.emit("makeRoom", makeRoomData);
-    } catch (error) {
-      console.error("err:", error);
-    }
+    setSelectedUser(user);
+    const makeRoomData = {
+      loginedUser,
+      selectedUser: user,
+    };
+    socket.emit("makeRoom", makeRoomData);
   };
-
-  // const [selectedRoomData, setSelectedRoomData] = useState(null);
-
   const selectRoom = (roomData) => {
     setSelectedRoom(roomData);
   };
 
   console.log("chaaaatdataaaa:", chatData);
 
-  // import "./styles.css";
+  const [searchValue, setSearchValue] = useState("");
+  const [openRoomIndex, setOpenRoomIndex] = useState(null);
+  const [showAllRooms, setShowAllRooms] = useState(true);
+
+  const toggleRoom = (roomName) => {
+    console.log("roomname:", roomName);
+    console.log("roomname_type:", typeof roomName);
+    const index = chatData.findIndex((room) => room.name == roomName);
+    if (index !== -1) {
+      setOpenRoomIndex(index);
+      setShowAllRooms(false);
+    } else {
+      console.log("Room not found.");
+    }
+  };
+
+  const showAllRoomsHandler = () => {
+    setShowAllRooms(true);
+    setOpenRoomIndex(null);
+  };
 
   return (
     <div className="container">
@@ -138,42 +161,77 @@ const Chat = () => {
         <h1>Chat App</h1>
         <div>
           <h2>Users</h2>
-          <ul>
-            {allUsers.map((user, index) => (
-              <li key={index} onClick={() => startChatWithUser(user)}>
-                start chat with: {user.username};
-              </li>
-            ))}
-          </ul>
+          <input
+            type="text"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Search users..."
+          />
+          {searchValue && (
+            <div
+              style={{
+                zIndex: 1001,
+              }}
+            >
+              {allUsers
+                .filter((user) =>
+                  user.username
+                    .toLowerCase()
+                    .includes(searchValue.toLowerCase())
+                )
+                .map((user, index) => (
+                  <div
+                    key={index}
+                    onClick={() => startChatWithUser(user)}
+                    style={{ marginBottom: "5px", cursor: "pointer" }}
+                  >
+                    <div>Username: {user.username}</div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
 
         <div>
           <div>
             <h2>Rooms</h2>
-            <div className="">
-              <ul className="">
-                {chatData?.map((r, i) => (
-                  <ul key={i} className="">
-                    roomname: {r.name}
-                    {r.messages?.map((m, j) => (
-                      <li key={j} className="">
-                        <br />
-                        {j}: {m}
-                      </li>
-                    ))}
-                  </ul>
+            {showAllRooms ? (
+              <>
+                {chatData?.map((room, index) => (
+                  <div
+                    key={index}
+                    onClick={() => toggleRoom(room.name)}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <h3>{room.name}</h3>
+                  </div>
                 ))}
-              </ul>
+              </>
+            ) : (
+              <>
+                <button onClick={() => showAllRoomsHandler()}>Back</button>
+                <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                  <div onClick={() => setOpenRoomIndex(null)}></div>
+                  {chatData[openRoomIndex]?.messages?.map((message, j) => (
+                    <div key={j}>
+                      <br />
+                      {j}: {message}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+          {!showAllRooms && (
+            <div style={{ margin: "100px" }}>
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+              />
+              <button onClick={sendMessage}>Sendd</button>
             </div>
-          </div>
-          <div>
-            <input
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-            />
-            <button onClick={sendMessage}>Sendd</button>
-          </div>
+          )}
         </div>
       </div>
     </div>
